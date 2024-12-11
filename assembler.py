@@ -46,88 +46,69 @@ class Assembler:
     }
 
     DEST = {
-        None:   "000",
-        "M":    "001",
-        "D":    "010",
-        "MD":   "011",
-        "A":    "100",
-        "AM":   "101",
-        "AD":   "110",
-        "AMD":  "111"
+        None: "000",
+        "M": "001",
+        "D": "010",
+        "MD": "011",
+        "A": "100",
+        "AM": "101",
+        "AD": "110",
+        "AMD": "111"
     }
 
     COMP = {
-        "0":    "0101010",  # a=0, c1=0, c2=1, c3=0, c4=1, c5=0, c6=1
-        "1":    "0111111",  # a=0, c1=0, c2=1, c3=1, c4=1, c5=1, c6=1
-        "-1":   "0111010",  # a=0, c1=0, c2=1, c3=1, c4=1, c5=0, c6=1
-        "D":    "0001100",  # a=0, c1=0, c2=0, c3=0, c4=1, c5=1, c6=0
-        "A":    "0110000",  # a=0, c1=0, c2=1, c3=1, c4=0, c5=0, c6=0
-        "!D":   "0001101",  # a=0, c1=0, c2=0, c3=0, c4=1, c5=1, c6=1
-        "!A":   "0110001",  # a=0, c1=0, c2=1, c3=1, c4=0, c5=0, c6=1
-        "-D":   "0001111",  # a=0, c1=0, c2=0, c3=0, c4=1, c5=1, c6=1
-        "-A":   "0110011",  # a=0, c1=0, c2=1, c3=1, c4=0, c5=0, c6=1
-        "D+1":  "0011111",  # a=0, c1=0, c2=0, c3=1, c4=1, c5=1, c6=1
-        "A+1":  "0110111",  # a=0, c1=0, c2=1, c3=1, c4=0, c5=1, c6=1
-        "D-1":  "0001110",  # a=0, c1=0, c2=0, c3=0, c4=1, c5=1, c6=0
-        "A-1":  "0110010",  # a=0, c1=0, c2=1, c3=1, c4=0, c5=0, c6=0
-        "D+A":  "0000010",  # a=0, c1=0, c2=0, c3=0, c4=0, c5=1, c6=0
-        "D-A":  "0010011",  # a=0, c1=0, c2=0, c3=1, c4=0, c5=0, c6=1
-        "A-D":  "0000111",  # a=0, c1=0, c2=0, c3=0, c4=0, c5=1, c6=1
-        "D&A":  "0000000",  # a=0, c1=0, c2=0, c3=0, c4=0, c5=0, c6=0
-        "D|A":  "0010101",  # a=0, c1=0, c2=0, c3=1, c4=0, c5=1, c6=0
-        "M":    "1110000",  # a=1, c1=1, c2=1, c3=1, c4=0, c5=0, c6=0
-        "!M":   "1110001",  # a=1, c1=1, c2=1, c3=1, c4=0, c5=0, c6=1
-        "-M":   "1110011",  # a=1, c1=1, c2=1, c3=1, c4=0, c5=0, c6=1
-        "M+1":  "1110111",  # a=1, c1=1, c2=1, c3=1, c4=0, c5=1, c6=1
-        "M-1":  "1110010",  # a=1, c1=1, c2=1, c3=1, c4=0, c5=0, c6=0
-        "D+M":  "1000010",  # a=1, c1=1, c2=0, c3=0, c4=0, c5=1, c6=0
-        "D-M":  "1010011",  # a=1, c1=1, c2=0, c3=1, c4=0, c5=0, c6=1
-        "M-D":  "1000111",  # a=1, c1=1, c2=0, c3=0, c4=0, c5=1, c6=1
-        "D&M":  "1000000",  # a=1, c1=1, c2=0, c3=0, c4=0, c5=0, c6=0
-        "D|M":  "1010101",  # a=1, c1=1, c2=0, c3=1, c4=0, c5=1, c6=0
+        "0": "0101010",  # a=0, c1=0, c2=1, c3=0, c4=1, c5=0, c6=1
+        "1": "0111111",  # a=0, c1=0, c2=1, c3=1, c4=1, c5=1, c6=1
+        "-1": "0111010",  # a=0, c1=0, c2=1, c3=1, c4=1, c5=0, c6=1
+        "D": "0001100",  # a=0, c1=0, c2=0, c3=0, c4=1, c5=1, c6=0
+        "A": "0110000",  # a=0, c1=0, c2=1, c3=1, c4=0, c5=0, c6=0
+        "!D": "0001101",  # a=0, c1=0, c2=0, c3=0, c4=1, c5=1, c6=1
+        "!A": "0110001",  # a=0, c1=0, c2=1, c3=1, c4=0, c5=0, c6=1
+        "-D": "0001111",  # a=0, c1=0, c2=0, c3=0, c4=1, c5=1, c6=1
+        "-A": "0110011",  # a=0, c1=0, c2=1, c3=1, c4=0, c5=0, c6=1
+        "D+1": "0011111",  # a=0, c1=0, c2=0, c3=1, c4=1, c5=1, c6=1
+        "A+1": "0110111",  # a=0, c1=0, c2=1, c3=1, c4=0, c5=1, c6=1
+        "D-1": "0001110",  # a=0, c1=0, c2=0, c3=0, c4=1, c5=1, c6=0
+        "A-1": "0110010",  # a=0, c1=0, c2=1, c3=1, c4=0, c5=0, c6=0
+        "D+A": "0000010",  # a=0, c1=0, c2=0, c3=0, c4=0, c5=1, c6=0
+        "D-A": "0010011",  # a=0, c1=0, c2=0, c3=1, c4=0, c5=0, c6=1
+        "A-D": "0000111",  # a=0, c1=0, c2=0, c3=0, c4=0, c5=1, c6=1
+        "D&A": "0000000",  # a=0, c1=0, c2=0, c3=0, c4=0, c5=0, c6=0
+        "D|A": "0010101",  # a=0, c1=0, c2=0, c3=1, c4=0, c5=1, c6=0
+        "M": "1110000",  # a=1, c1=1, c2=1, c3=1, c4=0, c5=0, c6=0
+        "!M": "1110001",  # a=1, c1=1, c2=1, c3=1, c4=0, c5=0, c6=1
+        "-M": "1110011",  # a=1, c1=1, c2=1, c3=1, c4=0, c5=0, c6=1
+        "M+1": "1110111",  # a=1, c1=1, c2=1, c3=1, c4=0, c5=1, c6=1
+        "M-1": "1110010",  # a=1, c1=1, c2=1, c3=1, c4=0, c5=0, c6=0
+        "D+M": "1000010",  # a=1, c1=1, c2=0, c3=0, c4=0, c5=1, c6=0
+        "D-M": "1010011",  # a=1, c1=1, c2=0, c3=1, c4=0, c5=0, c6=1
+        "M-D": "1000111",  # a=1, c1=1, c2=0, c3=0, c4=0, c5=1, c6=1
+        "D&M": "1000000",  # a=1, c1=1, c2=0, c3=0, c4=0, c5=0, c6=0
+        "D|M": "1010101",  # a=1, c1=1, c2=0, c3=1, c4=0, c5=1, c6=0
     }
 
     JUMP = {
         None: "000",  # No jump
-        "JGT":  "001",  # Jump if out > 0
-        "JEQ":  "010",  # Jump if out == 0
-        "JGE":  "011",  # Jump if out >= 0
-        "JLT":  "100",  # Jump if out < 0
-        "JNE":  "101",  # Jump if out != 0
-        "JLE":  "110",  # Jump if out <= 0
-        "JMP":  "111",  # Unconditional jump
+        "JGT": "001",  # Jump if out > 0
+        "JEQ": "010",  # Jump if out == 0
+        "JGE": "011",  # Jump if out >= 0
+        "JLT": "100",  # Jump if out < 0
+        "JNE": "101",  # Jump if out != 0
+        "JLE": "110",  # Jump if out <= 0
+        "JMP": "111",  # Unconditional jump
     }
 
     LABEL_PATTERN = r"^\([a-zA-Z$._:][a-zA-Z0-9$._:]*\)$"
     SYMBOL_PATTERN = r"^[a-zA-Z$._:][a-zA-Z0-9$._:]*$"
 
-    def __init__(self):
+    def __init__(self, source_file: str):
         """Initializes the assembler with default values for instance variables."""
+        if not source_file.endswith(".asm"):
+            raise ValueError(f"The file {input_file} is not of type .asm")
+        filename = Path(input_file).stem
+        directory = Path(input_file).parent
+        output = directory / (filename + ".hack")
         self.asm_source = None
-        self.preprocessed = []
-        self.unlabeled = []
-        self.symbols = {}
-        self.translated = []
-        self.next_variable = 16
-
-        self.filename = ""
-
-    def translate(self, source_file_name: str, output_directory: str = "") -> None:
-        """
-        Translates an assembly file into a machine code file.
-
-        This method performs the full translation process, which includes:
-        1. Initializing symbols and other internal state variables.
-        2. Loading the assembly source code from the specified file.
-        3. Preprocessing the source code to remove comments and whitespace.
-        4. Extracting and resolving labels into memory addresses.
-        5. Translating instructions into binary machine code.
-        6. Writing the final machine code to the destination file.
-
-        Args:
-            source_file_name (str): The path to the input assembly file.
-            output_directory (str): The path to the output machine code file.
-        """
 
         self.symbols = Assembler.PRE_DEFINED_SYMBOLS
         self.preprocessed = []
@@ -135,17 +116,32 @@ class Assembler:
         self.translated = []
         self.next_variable = 16
 
-        self.load_assembly_file(source_file_name)
+        self.translate(source_file)
+        self.write_hack_file(output)
+
+    def translate(self, source_file: str) -> None:
+        """
+        Translates an assembly file into a machine code file.
+
+        This method performs the full translation process, which includes:
+        1. Loading the assembly source code from the specified file.
+        2. Preprocessing the source code to remove comments and whitespace.
+        3. Extracting and resolving labels into memory addresses.
+        4. Translating instructions into binary machine code.
+
+        Args:
+            source_file (str): The path to the input assembly file.
+        """
+
+        self.load_assembly_file(source_file)
         self.preprocessing()
         self.get_labels()
         self.transcription()
-        self.write_hack_file(output_directory)
 
     def load_assembly_file(self, filename: str) -> None:
         """Loads the contents of an assembly file into `asm_source`."""
         if not filename.endswith(".asm"):
             raise ValueError(f"The file {filename} is not of type .asm")
-        self.filename = Path(filename).stem
         with open(filename, 'r') as file:
             self.asm_source = file.readlines()
 
@@ -224,9 +220,9 @@ class Assembler:
         """
         # 2's complement for negative number:
         if number < 0:
-            number += 2**16
+            number += 2 ** 16
 
-        _bin = ["0"]*16
+        _bin = ["0"] * 16
         for i in range(15, -1, -1):
             if number >= 2 ** i:
                 number -= 2 ** i
@@ -298,7 +294,7 @@ class Assembler:
         jump_bit = Assembler.JUMP.get(jump)
         if jump_bit is None: raise SyntaxError(f"C-instruction: unknown jump: {jump}")
 
-        return "111"+comp_bit+dest_bit+jump_bit
+        return "111" + comp_bit + dest_bit + jump_bit
 
     def transcription(self):
         """
@@ -320,23 +316,24 @@ class Assembler:
                 # C-instruction
                 self.translated.append(self.decode_c_instruction(instruction) + '\n')
 
-    def write_hack_file(self, directory: str) -> None:
+    def write_hack_file(self, output_path: Path) -> None:
         """Writes the translated binary instructions to a .hack file."""
 
-        path = Path(directory) / (self.filename + ".hack")
-        with open(path, 'w') as file:
-            self.translated[-1] = self.translated[-1].strip()       # remove last \n
+        with open(output_path, 'w') as file:
+            self.translated[-1] = self.translated[-1].strip()  # remove last \n
             file.writelines(self.translated)
 
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Hack Assembler")
-    parser.add_argument('input_file', type=str, help="Path to the input .asm file")
-    # Output file is optional, default to a name based on the input file
-    parser.add_argument('output_directory', type=str, nargs='?',
-                        default="", help="Path to the output .hack file (optional)")
+    parser.add_argument('input_file', type=str, nargs="?",
+                        default=None, help="Path to the input .asm file")
 
     args = parser.parse_args()
 
-    assembler = Assembler()
-    assembler.translate(args.input_file, args.output_directory)
+    if args.input_file is None:
+        input_file = input("Enter the input hack assembly file path\n>")
+    else:
+        input_file = args.input_file
+
+    assembler = Assembler(input_file)
