@@ -5,11 +5,8 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="81d94d52-d641-478d-a2cb-c56cfe49cbec" name="Changes" comment="">
-      <change afterPath="$PROJECT_DIR$/VMTranslator.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/Nand2Tetris.iml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/Nand2Tetris.iml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/misc.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/misc.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/assembler.py" beforeDir="false" afterPath="$PROJECT_DIR$/assembler.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/VMTranslator.py" beforeDir="false" afterPath="$PROJECT_DIR$/VMTranslator.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -67,7 +64,7 @@
       <recent name="C:\Users\marti\code\PyCharm\Nand2Tetris" />
     </key>
   </component>
-  <component name="RunManager" selected="Python.assembler">
+  <component name="RunManager" selected="Python.VMTranslator">
     <configuration name="VMTranslator" type="PythonConfigurationType" factoryName="Python" temporary="true" nameIsGenerated="true">
       <module name="Nand2Tetris" />
       <option name="ENV_FILES" value="" />
@@ -129,8 +126,8 @@
     </configuration>
     <recent_temporary>
       <list>
-        <item itemvalue="Python.assembler" />
         <item itemvalue="Python.VMTranslator" />
+        <item itemvalue="Python.assembler" />
         <item itemvalue="Python tests.Python tests in test_assembler.py" />
       </list>
     </recent_temporary>

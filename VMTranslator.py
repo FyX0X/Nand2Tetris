@@ -4,7 +4,7 @@ import argparse
 
 class Parser:
 
-    def __init__(self, input_file: str):
+    def __init__(self, input_file: Path):
         with open(input_file, 'r') as file:
             self.preprocessed = self.preprocessing(file.readlines())
         self.index = 0
@@ -109,11 +109,199 @@ class CodeWriter:
         self.output_path = path
         self.output = []
         self.next_instruction = 0
+        self.call_dictionary = {}
+        self.current_function = ".."
+        self.current_filename = None
+
+    def set_curr_filename(self, filename: str) -> None:
+        self.current_filename = filename
 
     def write(self, string: str = "", tab: bool = True) -> None:
         s = "    " if tab else ""
         s += string + '\n'
         self.output.append(s)
+
+    def write_init(self) -> None:
+        self.write("    // bootstrap")
+        # set SP to 256
+        self.write("@256")
+        self.write("D=A")
+        self.write("@SP")
+        self.write("M=D")
+        # call Sys.init
+        self.write_call("Sys.init", 0)
+        self.write()
+
+    def write_label(self, label: str) -> None:
+        self.write(f"    // label {label}")
+        self.write(f"({self.current_function}${label})", tab=False)
+
+    def write_goto(self, label: str) -> None:
+        self.write(f"    // goto {label}")
+        self.write(f"@{self.current_function}${label}")
+        self.write("0;JMP")
+        self.write()
+
+    def write_if(self, label: str) -> None:
+        self.write(f"    // if-goto {label}")
+        self.write("@SP")
+        self.write("M=M-1")         # SP = SP-1 => "pops" STACK TOP
+        self.write("A=M")           # goes to STACK TOP
+        self.write("D=M")
+        self.write(f"@{self.current_function}${label}")
+        self.write("D;JNE")         # if STACK TOP != 0 => JMP
+        self.write()
+
+    def write_function(self, function: str, n_var: int):
+        self.write(f"    // function {function} {n_var}")
+        self.write(f"({function})", tab=False)
+        # function initialisation set all local variables to 0
+        self.write("@SP")
+        self.write("A=M")
+        for i in range(n_var):
+            self.write("M=0")
+            self.write("@SP")
+            self.write("AM=M+1")
+        # function start
+        self.write()
+        self.current_function = function
+
+    def write_call(self, function: str, n_args: int):
+        # get call number for return address
+        return_number = self.call_dictionary.get(function, 0)
+        self.call_dictionary[function] = return_number + 1
+        self.write(f"    // call {function} {n_args}")
+        # push return address
+        self.write(f"@{function}$ret.{return_number}")
+        self.write("D=A")
+        self.write("@SP")
+        self.write("A=M")
+        self.write("M=D")
+        self.write("@SP")
+        self.write("M=M+1")
+        self.write("")
+        self.write("")
+        self.write("")
+        # save LCL of caller
+        self.write("@LCL")
+        self.write("D=M")
+        self.write("@SP")
+        self.write("A=M")
+        self.write("M=D")
+        self.write("@SP")
+        self.write("M=M+1")
+        # save ARG of caller
+        self.write("@ARG")
+        self.write("D=M")
+        self.write("@SP")
+        self.write("A=M")
+        self.write("M=D")
+        self.write("@SP")
+        self.write("M=M+1")
+        # save THIS of caller
+        self.write("@THIS")
+        self.write("D=M")
+        self.write("@SP")
+        self.write("A=M")
+        self.write("M=D")
+        self.write("@SP")
+        self.write("M=M+1")
+        # save THAT of caller
+        self.write("@THAT")
+        self.write("D=M")
+        self.write("@SP")
+        self.write("A=M")
+        self.write("M=D")
+        self.write("@SP")
+        self.write("AM=M+1")
+        # ARG = SP - 5 - n_args
+        self.write("D=A")       # SP
+        self.write("@5")
+        self.write("D=D-A")     # SP - 5
+        self.write(f"@{n_args}")
+        self.write("D=D-A")     # SP - 5 - n_args
+        self.write("@ARG")
+        self.write("M=D")
+        # LCL = SP
+        self.write("@SP")
+        self.write("D=M")
+        self.write("@LCL")
+        self.write("M=D")
+        # goto function
+        self.write(f"@{function}")
+        self.write("0;JMP")
+        # return address label
+        self.write(f"({function}$ret.{return_number})", tab=False)
+        self.write()
+
+    def write_return(self):
+        self.write("    // return")
+        # temp var: end_frame = LCL
+        self.write("// end_frame")
+        self.write("@LCL")
+        self.write("D=M")
+        self.write("@R13")
+        self.write("M=D")
+        # temp var: return_address = end_frame - 5
+        self.write("// return_address")
+        self.write("@5")
+        self.write("A=D-A")     # A: end_frame - 5
+        self.write("D=M")
+        self.write("@R14")
+        self.write("M=D")
+        # set CALLER STACK TOP to pop() (CALLEE STACK TOP)
+        self.write("// pop()")
+        self.write("@SP")
+        self.write("A=M-1")
+        self.write("D=M")
+        self.write("@ARG")
+        self.write("A=M")
+        self.write("M=D")
+        # SP = ARG + 1
+        self.write("// SP = ARG+1")
+        self.write("@ARG")
+        self.write("D=M+1")
+        self.write("@SP")
+        self.write("M=D")
+        # THAT = *(end_frame-1)
+        self.write("// THAT = *(end_frame-1)")
+        self.write("@R13")
+        self.write("A=M-1")
+        self.write("D=M")
+        self.write("@THAT")
+        self.write("M=D")
+        # THIS = *(end_frame-2)
+        self.write("// THAT = *(end_frame-1)")
+        self.write("@R13")
+        self.write("A=M-1")     # -1
+        self.write("A=A-1")     # -1
+        self.write("D=M")
+        self.write("@THIS")
+        self.write("M=D")
+        # ARG = *(end_frame-3)
+        self.write("// THAT = *(end_frame-1)")
+        self.write("@R13")
+        self.write("D=M")
+        self.write("@3")
+        self.write("A=D-A")     # end_frame - 3
+        self.write("D=M")
+        self.write("@ARG")
+        self.write("M=D")
+        # LCL = *(end_frame-4)
+        self.write("// THAT = *(end_frame-1)")
+        self.write("@R13")
+        self.write("D=M")
+        self.write("@4")
+        self.write("A=D-A")     # end_frame - 4
+        self.write("D=M")
+        self.write("@LCL")
+        self.write("M=D")
+        # goto return address
+        self.write("// goto return_address")
+        self.write("@R14")
+        self.write("A=M")
+        self.write("0;JMP")
+        self.write()
 
     def write_arithmetic(self, instruction: str) -> None:
         if instruction in CodeWriter.add_sub_instruction:
@@ -209,7 +397,7 @@ class CodeWriter:
         elif segment == "static":
             # stored in global space as symbolic variables @Foo.i
             self.write(f"    // push static {index}")
-            self.write(f"@{self.output_file_name}.{index}")
+            self.write(f"@{self.current_filename}.{index}")
             self.write("D=M")       # Value of static(i)
             # SP++
             self.write("@SP")
@@ -275,7 +463,7 @@ class CodeWriter:
             self.write("@SP")
             self.write("AM=M-1")
             self.write("D=M")
-            self.write(f"@{self.output_file_name}.{index}")
+            self.write(f"@{self.current_filename}.{index}")
             self.write("M=D")
             self.write()
         elif segment == "pointer":
@@ -299,18 +487,39 @@ class CodeWriter:
 
 
 class VMTranslator:
-    def __init__(self, input_file: str):
+    def __init__(self, input: str):
+        if self.is_valid_file(input):
+            files = [Path(input)]
+        elif self.is_valid_dir(input):
+            files = list(Path(input).glob('**/*.vm'))
+        else:
+            raise ValueError(f"Invalid input path: {input} is not a directory or .vm file.")
 
-        if not input_file.endswith(".vm"):
-            raise ValueError(f"The file {input_file} is not of type .vm")
-        filename = Path(input_file).stem
-        directory = Path(input_file).parent
-        self.parser = Parser(input_file)
-        self.codeWriter = CodeWriter(filename, directory)
+        out_filename = Path(input).stem
+        out_directory = Path(input).parent
 
-        self.translate()
+        self.code_writer = CodeWriter(out_filename, out_directory)
+        self.code_writer.write_init()
+        for file in files:
+            self.parser = Parser(file)
+            self.code_writer.set_curr_filename(file.stem)
+            self.translate()
 
-        self.codeWriter.write_file()
+        self.code_writer.write_file()
+
+    @staticmethod
+    def is_valid_file(file):
+        path = Path(file)
+        if path.is_file() and path.suffix == ".vm":
+            return True
+        return False
+
+    @staticmethod
+    def is_valid_dir(dir):
+        path = Path(dir)
+        if path.is_dir():
+            return True
+        return False
 
     def translate(self):
         while self.parser.has_more_commands():
@@ -319,34 +528,41 @@ class VMTranslator:
             match cmd:
                 case "C_ARITHMETIC":
                     instruction = self.parser.arg1()
-                    self.codeWriter.write_arithmetic(instruction)
+                    self.code_writer.write_arithmetic(instruction)
                 case "C_PUSH":
                     segment = self.parser.arg1()
                     index = self.parser.arg2()
-                    self.codeWriter.write_push(segment, index)
+                    self.code_writer.write_push(segment, index)
                 case "C_POP":
                     segment = self.parser.arg1()
                     index = self.parser.arg2()
-                    self.codeWriter.write_pop(segment, index)
+                    self.code_writer.write_pop(segment, index)
                 case "C_LABEL":
-                    pass
+                    label = self.parser.arg1()
+                    self.code_writer.write_label(label)
                 case "C_GOTO":
-                    pass
+                    label = self.parser.arg1()
+                    self.code_writer.write_goto(label)
                 case "C_IF":
-                    pass
+                    label = self.parser.arg1()
+                    self.code_writer.write_if(label)
                 case "C_FUNCTION":
-                    pass
+                    function = self.parser.arg1()
+                    n_var = self.parser.arg2()
+                    self.code_writer.write_function(function, n_var)
                 case "C_RETURN":
-                    pass
+                    self.code_writer.write_return()
                 case "C_CALL":
-                    pass
+                    function = self.parser.arg1()
+                    n_args = self.parser.arg2()
+                    self.code_writer.write_call(function, n_args)
 
 
 if __name__ == '__main__':
 
     arg_parser = argparse.ArgumentParser(description="Hack VM Translator")
     arg_parser.add_argument('input_file', type=str, nargs="?",
-                        default=None, help="Path to the input .asm file")
+                            default=None, help="Path to the input .asm file")
 
     args = arg_parser.parse_args()
 
