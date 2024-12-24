@@ -4,9 +4,11 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="81d94d52-d641-478d-a2cb-c56cfe49cbec" name="Changes" comment="">
+    <list default="true" id="81d94d52-d641-478d-a2cb-c56cfe49cbec" name="Changes" comment="Compiler (part 1 - JackAnalyzer)">
+      <change afterPath="$PROJECT_DIR$/Compiler/CompilationEngine.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Compiler/JackAnalyzer.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Compiler/JackTokenizer.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/VMTranslator.py" beforeDir="false" afterPath="$PROJECT_DIR$/VMTranslator.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -44,19 +46,24 @@
     <option name="hideEmptyMiddlePackages" value="true" />
     <option name="showLibraryContents" value="true" />
   </component>
-  <component name="PropertiesComponent">{
-  &quot;keyToString&quot;: {
-    &quot;Python tests.Python tests in test_assembler.py.executor&quot;: &quot;Run&quot;,
-    &quot;Python.VMTranslator.executor&quot;: &quot;Run&quot;,
-    &quot;Python.assembler.executor&quot;: &quot;Run&quot;,
-    &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
-    &quot;git-widget-placeholder&quot;: &quot;master&quot;,
-    &quot;last_opened_file_path&quot;: &quot;C:/Users/marti/code/PyCharm/Nand2Tetris/test_files&quot;,
-    &quot;settings.editor.selected.configurable&quot;: &quot;com.jetbrains.python.configuration.PyIntegratedToolsModulesConfigurable&quot;
+  <component name="PropertiesComponent"><![CDATA[{
+  "keyToString": {
+    "Python tests.Python tests in test_assembler.py.executor": "Run",
+    "Python.JackAnalyzer.executor": "Run",
+    "Python.JackTokenizer.executor": "Run",
+    "Python.VMTranslator.executor": "Run",
+    "Python.assembler.executor": "Run",
+    "Python.snake.executor": "Run",
+    "Python.snake_test.executor": "Run",
+    "RunOnceActivity.ShowReadmeOnStart": "true",
+    "git-widget-placeholder": "master",
+    "last_opened_file_path": "C:/Users/marti/code/PyCharm/Nand2Tetris/Compiler/test",
+    "settings.editor.selected.configurable": "com.jetbrains.python.configuration.PyIntegratedToolsModulesConfigurable"
   }
-}</component>
+}]]></component>
   <component name="RecentsManager">
     <key name="CopyFile.RECENT_KEYS">
+      <recent name="C:\Users\marti\code\PyCharm\Nand2Tetris\Compiler\test" />
       <recent name="C:\Users\marti\code\PyCharm\Nand2Tetris\test_files" />
       <recent name="C:\Users\marti\code\PyCharm\Nand2Tetris" />
     </key>
@@ -64,7 +71,51 @@
       <recent name="C:\Users\marti\code\PyCharm\Nand2Tetris" />
     </key>
   </component>
-  <component name="RunManager" selected="Python.VMTranslator">
+  <component name="RunManager" selected="Python.JackAnalyzer">
+    <configuration name="JackAnalyzer" type="PythonConfigurationType" factoryName="Python" temporary="true" nameIsGenerated="true">
+      <module name="Nand2Tetris" />
+      <option name="ENV_FILES" value="" />
+      <option name="INTERPRETER_OPTIONS" value="" />
+      <option name="PARENT_ENVS" value="true" />
+      <envs>
+        <env name="PYTHONUNBUFFERED" value="1" />
+      </envs>
+      <option name="SDK_HOME" value="" />
+      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$/Compiler" />
+      <option name="IS_MODULE_SDK" value="true" />
+      <option name="ADD_CONTENT_ROOTS" value="true" />
+      <option name="ADD_SOURCE_ROOTS" value="true" />
+      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/Compiler/JackAnalyzer.py" />
+      <option name="PARAMETERS" value="" />
+      <option name="SHOW_COMMAND_LINE" value="false" />
+      <option name="EMULATE_TERMINAL" value="false" />
+      <option name="MODULE_MODE" value="false" />
+      <option name="REDIRECT_INPUT" value="false" />
+      <option name="INPUT_FILE" value="" />
+      <method v="2" />
+    </configuration>
+    <configuration name="JackTokenizer" type="PythonConfigurationType" factoryName="Python" temporary="true" nameIsGenerated="true">
+      <module name="Nand2Tetris" />
+      <option name="ENV_FILES" value="" />
+      <option name="INTERPRETER_OPTIONS" value="" />
+      <option name="PARENT_ENVS" value="true" />
+      <envs>
+        <env name="PYTHONUNBUFFERED" value="1" />
+      </envs>
+      <option name="SDK_HOME" value="" />
+      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$/Compiler" />
+      <option name="IS_MODULE_SDK" value="true" />
+      <option name="ADD_CONTENT_ROOTS" value="true" />
+      <option name="ADD_SOURCE_ROOTS" value="true" />
+      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/Compiler/JackTokenizer.py" />
+      <option name="PARAMETERS" value="" />
+      <option name="SHOW_COMMAND_LINE" value="false" />
+      <option name="EMULATE_TERMINAL" value="false" />
+      <option name="MODULE_MODE" value="false" />
+      <option name="REDIRECT_INPUT" value="false" />
+      <option name="INPUT_FILE" value="" />
+      <method v="2" />
+    </configuration>
     <configuration name="VMTranslator" type="PythonConfigurationType" factoryName="Python" temporary="true" nameIsGenerated="true">
       <module name="Nand2Tetris" />
       <option name="ENV_FILES" value="" />
@@ -87,7 +138,7 @@
       <option name="INPUT_FILE" value="" />
       <method v="2" />
     </configuration>
-    <configuration name="assembler" type="PythonConfigurationType" factoryName="Python" temporary="true" nameIsGenerated="true">
+    <configuration name="snake_test" type="PythonConfigurationType" factoryName="Python" temporary="true" nameIsGenerated="true">
       <module name="Nand2Tetris" />
       <option name="ENV_FILES" value="" />
       <option name="INTERPRETER_OPTIONS" value="" />
@@ -96,11 +147,11 @@
         <env name="PYTHONUNBUFFERED" value="1" />
       </envs>
       <option name="SDK_HOME" value="" />
-      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$" />
+      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$/snake_test" />
       <option name="IS_MODULE_SDK" value="true" />
       <option name="ADD_CONTENT_ROOTS" value="true" />
       <option name="ADD_SOURCE_ROOTS" value="true" />
-      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/assembler.py" />
+      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/snake_test/snake_test.py" />
       <option name="PARAMETERS" value="" />
       <option name="SHOW_COMMAND_LINE" value="false" />
       <option name="EMULATE_TERMINAL" value="false" />
@@ -126,8 +177,10 @@
     </configuration>
     <recent_temporary>
       <list>
+        <item itemvalue="Python.JackAnalyzer" />
+        <item itemvalue="Python.JackTokenizer" />
+        <item itemvalue="Python.snake_test" />
         <item itemvalue="Python.VMTranslator" />
-        <item itemvalue="Python.assembler" />
         <item itemvalue="Python tests.Python tests in test_assembler.py" />
       </list>
     </recent_temporary>
@@ -148,11 +201,25 @@
       <option name="presentableId" value="Default" />
       <updated>1733619224433</updated>
     </task>
+    <task id="LOCAL-00001" summary="VM translator done.">
+      <option name="closed" value="true" />
+      <created>1734057414523</created>
+      <option name="number" value="00001" />
+      <option name="presentableId" value="LOCAL-00001" />
+      <option name="project" value="LOCAL" />
+      <updated>1734057414523</updated>
+    </task>
+    <option name="localTasksCounter" value="2" />
     <servers />
   </component>
   <component name="UnknownFeatures">
     <option featureType="com.intellij.fileTypeFactory" implementationName="*.asm" />
     <option featureType="com.intellij.fileTypeFactory" implementationName="*.vm" />
+  </component>
+  <component name="VcsManagerConfiguration">
+    <MESSAGE value="VM translator done." />
+    <MESSAGE value="Compiler (part 1 - JackAnalyzer)" />
+    <option name="LAST_COMMIT_MESSAGE" value="Compiler (part 1 - JackAnalyzer)" />
   </component>
   <component name="XDebuggerManager">
     <breakpoint-manager>
