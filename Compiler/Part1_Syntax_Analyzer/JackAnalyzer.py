@@ -1,5 +1,5 @@
 from JackTokenizer import JackTokenizer
-from CompilationEngine import CompilationEngine
+from CompilationEngineXML import CompilationEngine
 import argparse
 from pathlib import Path
 
@@ -15,9 +15,6 @@ class JackAnalyzer:
             raise ValueError(f"Invalid input path: {_input} is not a directory or .jack file.")
 
         for file in files:
-            print("=============================")
-            print(file)
-            print("=============================")
             tokenizer = JackTokenizer(file)
             compilation_engine = CompilationEngine(tokenizer)
             compilation_engine.write_file(file.parent / (file.stem + "_.xml"))

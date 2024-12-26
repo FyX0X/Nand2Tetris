@@ -21,7 +21,7 @@ class TestAssembler(unittest.TestCase):
 
     def test_load_assembly_file(self):
         comparison = [
-            "@10\n",
+            "@test\n",
             "@var\n",
             "\n",
             "// comment\n",
@@ -35,7 +35,7 @@ class TestAssembler(unittest.TestCase):
 
     def test_preprocessing(self):
         comparison = [
-            "@10",
+            "@test",
             "@var",
             "D=M",
             "(LABEL0)",
@@ -57,7 +57,7 @@ class TestAssembler(unittest.TestCase):
     def test_decode_a_instruction(self):
         self.assembler.symbols["test"] = 10
         self.assembler.symbols["test1"] = 100
-        self.assertEqual("0000000000001010", self.assembler.decode_a_instruction("@10"),
+        self.assertEqual("0000000000001010", self.assembler.decode_a_instruction("@test"),
                          msg="test_decode_a_instruction0")
         self.assertEqual("0000010101001100", self.assembler.decode_a_instruction("@1356"),
                          msg="test_decode_a_instruction1")

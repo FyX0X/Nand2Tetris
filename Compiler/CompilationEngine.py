@@ -1,10 +1,14 @@
 from pathlib import Path
 from JackTokenizer import JackTokenizer
+from SymbolTable import SymbolTable
+from VMWriter import VMWriter
 
 
 class CompilationEngine:
     UNARY_OP = ['~', '-']
-    BINARY_OP = ['+', '-', '*', '/', '&', '|', '>', '<', '=']
+    U_OP_TO_VM = {'~': "not", '-': "neg"}
+    BINARY_OP = ['+', '-', '*', '/', '&amp;', '|', '&lt;', '&gt;', '=']
+    B_OP_TO_VM = {'+': "add", '-': "sub", '&amp;': "and", '|': "or", '&lt;': "lt", '&gt;': "gt", '=': "eq"}
     KEYWORD_CONST = ["true", "false", "null", "this"]
     CLASS_VAR_DEC_KW = ["static", "field"]
     SUBROUTINE_DEC_KW = ["constructor", "function", "method"]
@@ -12,251 +16,147 @@ class CompilationEngine:
     RETURN_TYPE_KW = ["int", "char", "boolean", "void"]
     STATEMENT_KW = ["while", "if", "let", "return", "do"]
 
-    def __init__(self, tokenizer: JackTokenizer):
+    KIND_TO_SEGMENT = {"var": "local", "argument": "argument", "field": "this", "static": "static"}
+
+    if_count = -1
+    while_count = -1
+
+    def __init__(self, tokenizer: JackTokenizer, output_path: Path):
         self.tokenizer = tokenizer
+        self.writer = VMWriter(output_path)
+        self.symbol_table = SymbolTable()
         self.output = ""
         self.indentation = 0
+        self.current_class = None
+
+        self.tokenizer.advance()
         self.compile_class()
 
-    def write_file(self, output_path: Path) -> None:
-        with open(output_path, 'w') as file:
-            file.writelines(self.output)
-
-    def write(self, type: str, value: str | int) -> None:
-        self.output += "\t" * self.indentation + f"<{type}> {value} </{type}>\n"
-
-    def write_non_terminal(self, string: str, entry: bool) -> None:
-        self.output += "\t" * self.indentation + f"<{'/' * (not entry)}{string}>\n"
-
+        self.writer.write_file()
+    """
     def next(self) -> None:
         if self.tokenizer.has_more_tokens():
             self.tokenizer.advance()
-
-    def eat(self, expected: str | list) -> str:
+    """
+    def eat(self, expected: str | list, advance: bool = True) -> str:
         if not self.check(expected):
             raise SyntaxError(f"Expected {expected} but {self.tokenizer.current_token} was found.")
-        word = self.tokenizer.current_token
-        self.next()
-        return word
+        token = self.tokenizer.current_token
+        if advance:
+            self.tokenizer.advance()
+        return token
+
+    def eat_type(self, expected: str | list) -> str:
+        if not self.check_type(expected):
+            raise SyntaxError(f"Expected {expected} but {self.tokenizer.current_type} was found.")
+        token = self.tokenizer.current_token
+        self.tokenizer.advance()
+        return token
 
     def check(self, expected: str | list) -> bool:
         if type(expected) is not list:
             expected = [expected]
         return self.tokenizer.current_token in expected
 
-    def compile_class(self):
-        self.write_non_terminal("class", True)
-        self.indentation += 1
-        self.next()
-        # 'class'
-        self.eat("class")
-        self.write("keyword", "class")
-        # class_name
-        if self.tokenizer.token_type() == "IDENTIFIER":
-            self.write("identifier", self.tokenizer.identifier())
-        else:
-            raise SyntaxError(f"Excepted className identifier but found : {self.tokenizer.current_token}")
-        self.next()
-        # '{'
-        self.eat('{')
-        self.write("symbol", '{')
-        # classVarDec*
-        while self.check(CompilationEngine.CLASS_VAR_DEC_KW):
-            self.compile_class_var_dec()
-        # subroutineDec*
-        while self.check(CompilationEngine.SUBROUTINE_DEC_KW):
-            self.compile_subroutine_dec()
-        # '}'
-        self.eat('}')
-        self.write("symbol", '}')
+    def check_type(self, expected: str | list) -> bool:
+        if type(expected) is not list:
+            expected = [expected]
+        return self.tokenizer.current_type in expected
 
-        self.indentation -= 1
-        self.write_non_terminal("class", False)
+    def eat_var_type(self, return_type: bool = False) -> str:
+        allowed_kw = CompilationEngine.TYPE_KW
+        if return_type:
+            allowed_kw = CompilationEngine.RETURN_TYPE_KW
 
-    def compile_class_var_dec(self):
-        self.write_non_terminal("classVarDec", True)
-        self.indentation += 1
-        # static / field
-        word = self.eat(CompilationEngine.CLASS_VAR_DEC_KW)
-        self.write("keyword", word)
-        # type
-        if self.check(CompilationEngine.TYPE_KW):
-            word = self.eat(CompilationEngine.TYPE_KW)
-            self.write("keyword", word)
-        elif self.tokenizer.token_type() == "IDENTIFIER":
-            self.write("identifier", self.tokenizer.current_token)
-            self.next()
+        if self.check_type("keyword"):
+            return self.eat(allowed_kw)                 # type | className
+        elif self.check_type("identifier"):
+            return self.eat_type("identifier")
         else:
             raise SyntaxError(f"Excepted variable type but found : {self.tokenizer.current_token}")
-        # varName
-        if self.tokenizer.token_type() == "IDENTIFIER":
-            self.write("identifier", self.tokenizer.current_token)
-        else:
-            raise SyntaxError(f"Excepted varName identifier but found : {self.tokenizer.current_token}")
-        self.next()
-        # (, varName)*
-        while not self.check(';'):
-            #,
-            self.eat(',')
-            self.write("symbol", ',')
-            # varName
-            if self.tokenizer.token_type() == "IDENTIFIER":
-                self.write("identifier", self.tokenizer.current_token)
-            else:
-                raise SyntaxError(f"Excepted varName identifier but found : {self.tokenizer.current_token}")
-            self.next()
-        self.eat(';')
-        self.write("symbol", ';')
 
-        self.indentation -= 1
-        self.write_non_terminal("classVarDec", False)
+    def compile_class(self):
+        self.eat("class")
+        self.current_class = self.eat_type("identifier")     # class_name
+        self.eat('{')
+        while self.check(CompilationEngine.CLASS_VAR_DEC_KW):   # classVarDec*
+            self.compile_class_var_dec()
+        while self.check(CompilationEngine.SUBROUTINE_DEC_KW):  # subroutineDec*
+            self.compile_subroutine_dec()
+        self.eat('}', False)
+
+    def compile_class_var_dec(self):
+        var_kind = self.eat(CompilationEngine.CLASS_VAR_DEC_KW)         # static / field
+        var_type = self.eat_var_type()                                  # type | className
+        var_name = self.eat_type("identifier")                          # varName
+        self.symbol_table.define(var_name, var_type, var_kind)
+        while not self.check(';'):                                      # (, varName)*
+            self.eat(',')
+            var_name = self.eat_type("identifier")                      # varName
+            self.symbol_table.define(var_name, var_type, var_kind)
+        self.eat(';')
 
     def compile_subroutine_dec(self):
-        self.write_non_terminal("subroutineDec", True)
-        self.indentation += 1
+        self.symbol_table.start_subroutine()                                # reset subroutine symbol table
 
-        # constructor | method | function
-        word = self.eat(CompilationEngine.SUBROUTINE_DEC_KW)
-        self.write("keyword", word)
-        # type | className
-        if self.check(CompilationEngine.RETURN_TYPE_KW):
-            word = self.eat(CompilationEngine.RETURN_TYPE_KW)
-            self.write("keyword", word)
-        elif self.tokenizer.token_type() == "IDENTIFIER":
-            self.write("identifier", self.tokenizer.current_token)
-            self.next()
-        else:
-            raise SyntaxError(f"Excepted subroutine type but found : {self.tokenizer.current_token}")
-        # subroutineName
-        if self.tokenizer.token_type() == "IDENTIFIER":
-            self.write("identifier", self.tokenizer.current_token)
-        else:
-            raise SyntaxError(f"Excepted subroutineName identifier but found : {self.tokenizer.current_token}")
-        self.next()
-        # (
+        subroutine_type = self.eat(CompilationEngine.SUBROUTINE_DEC_KW)     # constructor | method | function
+        if subroutine_type == "method":
+            self.symbol_table.define("this", "int", "argument")
+
+        self.eat_var_type(True)                                             # return type
+        subroutine_name = self.eat_type("identifier")                       # subroutineName
         self.eat('(')
-        self.write("symbol", '(')
-        # parameter list
         self.compile_parameter_list()
-        # )
         self.eat(')')
-        self.write("symbol", ')')
-        # subroutine body
-        self.compile_subroutine_body()
-
-        self.indentation -= 1
-        self.write_non_terminal("subroutineDec", False)
+        self.compile_subroutine_body(self.current_class + '.' + subroutine_name, subroutine_type)
 
     def compile_parameter_list(self):
-        self.write_non_terminal("parameterList", True)
-        self.indentation += 1
-        # optional
-        if self.check(')'):
-            self.indentation -= 1
-            self.write_non_terminal("parameterList", False)
-            return
-        # type | className
-        if self.check(CompilationEngine.TYPE_KW):
-            word = self.eat(CompilationEngine.TYPE_KW)
-            self.write("keyword", word)
-        elif self.tokenizer.token_type() == "IDENTIFIER":
-            self.write("identifier", self.tokenizer.current_token)
-            self.next()
-        else:
-            raise SyntaxError(f"Excepted subroutine type but found : {self.tokenizer.current_token}")
-        # varName
-        if self.tokenizer.token_type() == "IDENTIFIER":
-            self.write("identifier", self.tokenizer.current_token)
-        else:
-            raise SyntaxError(f"Excepted varName identifier but found : {self.tokenizer.current_token}")
-        self.next()
-        # (, type varName)*
-        while not self.check(')'):
-            #,
-            self.eat(',')
-            self.write("symbol", ',')
-            # type | className
-            if self.check(CompilationEngine.TYPE_KW):
-                word = self.eat(CompilationEngine.TYPE_KW)
-                self.write("keyword", word)
-            elif self.tokenizer.token_type() == "IDENTIFIER":
-                self.write("identifier", self.tokenizer.current_token)
-                self.next()
-            else:
-                raise SyntaxError(f"Excepted subroutine type but found : {self.tokenizer.current_token}")
-            # varName
-            if self.tokenizer.token_type() == "IDENTIFIER":
-                self.write("identifier", self.tokenizer.current_token)
-            else:
-                raise SyntaxError(f"Excepted varName identifier but found : {self.tokenizer.current_token}")
-            self.next()
-        self.indentation -= 1
-        self.write_non_terminal("parameterList", False)
+        if not self.check(')'):             # optional
+            var_type = self.eat_var_type()
+            var_name = self.eat_type("identifier")
+            self.symbol_table.define(var_name, var_type, "argument")
+            while not self.check(')'):      # (, type varName)*
+                self.eat(',')
+                var_type = self.eat_var_type()
+                var_name = self.eat_type("identifier")
+                self.symbol_table.define(var_name, var_type, "argument")
 
-    def compile_subroutine_body(self):
-        self.write_non_terminal("subroutineBody", True)
-        self.indentation += 1
-
-        # {
+    def compile_subroutine_body(self, function_name, subroutine_type):
+        var_count = 0
         self.eat('{')
-        self.write("symbol", '{')
-        # varDec*
-        while self.check("var"):
-            self.compile_var_dec()
-        # statements
+        while self.check("var"):        # varDec*
+            var_count += self.compile_var_dec()
+        self.writer.write_function(function_name, var_count)
+        match subroutine_type:
+            case "constructor":
+                instance_size = self.symbol_table.var_count("field")
+                self.writer.write_push("constant", instance_size)
+                self.writer.write_call("Memory.alloc", 1)
+                self.writer.write_pop("pointer", 0)
+            case "method":
+                self.writer.write_push("argument", 0)       # current object
+                self.writer.write_pop("pointer", 0)
+
         self.compile_statements()
-        # }
         self.eat('}')
-        self.write("symbol", '}')
 
-        self.indentation -= 1
-        self.write_non_terminal("subroutineBody", False)
-
-    def compile_var_dec(self):
-        self.write_non_terminal("varDec", True)
-        self.indentation += 1
-
-        # var
+    def compile_var_dec(self) -> int:
+        var_count = 1
         self.eat("var")
-        self.write("keyword", "var")
-        # type | className
-        if self.check(CompilationEngine.TYPE_KW):
-            word = self.eat(CompilationEngine.TYPE_KW)
-            self.write("keyword", word)
-        elif self.tokenizer.token_type() == "IDENTIFIER":
-            self.write("identifier", self.tokenizer.current_token)
-            self.next()
-        else:
-            raise SyntaxError(f"Excepted subroutine type but found : {self.tokenizer.current_token}")
-        # varName
-        if self.tokenizer.token_type() == "IDENTIFIER":
-            self.write("identifier", self.tokenizer.current_token)
-        else:
-            raise SyntaxError(f"Excepted varName identifier but found : {self.tokenizer.current_token}")
-        self.next()
-        # (, varName)*
-        while not self.check(';'):
-            #,
+        var_type = self.eat_var_type()
+        var_name = self.eat_type("identifier")
+        self.symbol_table.define(var_name, var_type, "var")
+        while not self.check(';'):          # (, varName)*
+            var_count += 1
             self.eat(',')
-            self.write("symbol", ',')
-            # varName
-            if self.tokenizer.token_type() == "IDENTIFIER":
-                self.write("identifier", self.tokenizer.current_token)
-            else:
-                raise SyntaxError(f"Excepted varName identifier but found : {self.tokenizer.current_token}")
-            self.next()
+            var_name = self.eat_type("identifier")
+            self.symbol_table.define(var_name, var_type, "var")
         self.eat(';')
-        self.write("symbol", ';')
-
-        self.indentation -= 1
-        self.write_non_terminal("varDec", False)
+        return var_count
 
     def compile_statements(self):
-        self.write_non_terminal("statements", True)
-        self.indentation += 1
         while self.check(CompilationEngine.STATEMENT_KW):
-            word = self.eat(CompilationEngine.STATEMENT_KW)
-            match word:
+            match self.tokenizer.current_token:
                 case "while":
                     self.compile_while()
                 case "if":
@@ -267,268 +167,184 @@ class CompilationEngine:
                     self.compile_return()
                 case "do":
                     self.compile_do()
-        self.indentation -= 1
-        self.write_non_terminal("statements", False)
 
     def compile_let(self):
-        print("let", self.tokenizer.current_token)
-        self.write_non_terminal("letStatement", True)
-        self.indentation += 1
-
-        # let
-        self.write("keyword", "let")
-        # varName
-        if self.tokenizer.token_type() == "IDENTIFIER":
-            self.write("identifier", self.tokenizer.current_token)
-        else:
-            raise SyntaxError(f"Excepted varName identifier but found : {self.tokenizer.current_token}")
-        self.next()
-        # optional
-        if self.check('['):
-            # [
+        self.eat("let")
+        var_name = self.eat_type("identifier")
+        var_kind = self.symbol_table.kind_of(var_name)
+        segment = CompilationEngine.KIND_TO_SEGMENT[var_kind]
+        var_index = self.symbol_table.index_of(var_name)
+        if self.check('['):                                         # only for array
+            self.writer.write_push(segment, var_index)              # push array base address
             self.eat('[')
-            self.write("symbol", '[')
-            # expression
-            self.compile_expression()
-            # ]
+            self.compile_expression()                               # comp(expr) -> index
             self.eat(']')
-            self.write("symbol", ']')
-        # =
-        self.eat('=')
-        self.write("symbol", '=')
-        # expression
-        self.compile_expression()
-        # ;
-        self.eat(';')
-        self.write("symbol", ';')
-
-        self.indentation -= 1
-        self.write_non_terminal("letStatement", False)
+            self.writer.write_arithmetic("add")                     # add index with base address
+            self.eat('=')
+            self.compile_expression()                               # compute and push RHS
+            self.eat(';')
+            self.writer.write_pop("temp", 0)
+            self.writer.write_pop("pointer", 1)
+            self.writer.write_push("temp", 0)
+            self.writer.write_pop("that", 0)
+        else:                                                       # only for not array
+            self.eat('=')
+            self.compile_expression()                               # comp(expr) -> RHS
+            self.eat(';')
+            self.writer.write_pop(segment, var_index)
 
     def compile_if(self):
-        print("if")
-        self.write_non_terminal("ifStatement", True)
-        self.indentation += 1
-        self.write("keyword", "if")
-        # (
-        self.eat('(')
-        self.write("symbol", '(')
-        # expression
-        self.compile_expression()
-        # )
-        self.eat(')')
-        self.write("symbol", ')')
-        # {
-        self.eat('{')
-        self.write("symbol", '{')
-        # statements
-        self.compile_statements()
-        # }
-        self.eat('}')
-        self.write("symbol", '}')
-        # optional else
-        print("else")
-        if self.check("else"):
-            self.eat("else")
-            self.write("keyword", "else")
-            # {
-            self.eat('{')
-            self.write("symbol", '{')
-            # statements
-            self.compile_statements()
-            # }
-            self.eat('}')
-            self.write("symbol", '}')
+        CompilationEngine.if_count += 1
+        this_if = CompilationEngine.if_count
 
-        self.indentation -= 1
-        self.write_non_terminal("ifStatement", False)
+        self.eat("if")
+        self.eat('(')
+        self.compile_expression()                       # comp(expr) condition
+        self.writer.write_arithmetic("not")             # negate condition
+        self.eat(')')
+        self.writer.write_if(f"IF_FALSE_{this_if}")     # if-goto L1
+        self.eat('{')
+        self.compile_statements()                       # comp(expr)    condition is true
+        self.eat('}')
+        self.writer.write_goto(f"IF_END_{this_if}")     # goto L2
+        self.writer.write_label(f"IF_FALSE_{this_if}")  # label L1
+        if self.check("else"):      # optional else
+            self.eat('else')
+            self.eat('{')
+            self.compile_statements()                   # comp(expr) condition is false
+            self.eat('}')
+        self.writer.write_label(f"IF_END_{this_if}")    # label L2
 
     def compile_while(self):
-        print("while")
-        self.write_non_terminal("whileStatement", True)
-        self.indentation += 1
+        CompilationEngine.while_count += 1
+        this_while = CompilationEngine.while_count
 
-        self.write("keyword", "while")
-        # (
+        self.eat("while")
+        self.writer.write_label(f"WHILE_LOOP_{this_while}")         # label L1
         self.eat('(')
-        self.write("symbol", '(')
-        # expression
-        self.compile_expression()
-        # )
+        self.compile_expression()                                   # comp(expr) condition
+        self.writer.write_arithmetic("not")                         # negate condition
+        self.writer.write_if(f"WHILE_END_{this_while}")             # if goto L2
         self.eat(')')
-        self.write("symbol", ')')
-        # {
         self.eat('{')
-        self.write("symbol", '{')
-        # statements
-        self.compile_statements()
-        # }
+        self.compile_statements()                                   # comp(statement) loop
         self.eat('}')
-        self.write("symbol", '}')
-
-        self.indentation -= 1
-        self.write_non_terminal("whileStatement", False)
+        self.writer.write_goto(f"WHILE_LOOP_{this_while}")
+        self.writer.write_label(f"WHILE_END_{this_while}")
 
     def compile_do(self):
-        print("do")
-        self.write_non_terminal("doStatement", True)
-        self.indentation += 1
-        # do
-        self.write("keyword", "do")
-        # subroutineCall
+        self.eat("do")
         self.write_subroutine_call()
-        # ;
         self.eat(';')
-        self.write("symbol", ';')
+        self.writer.write_pop("temp", 0)            # pop for void subroutine
 
-        self.indentation -= 1
-        self.write_non_terminal("doStatement", False)
-
-    def write_subroutine_call(self, token: str = None, token_type: str = None):
-        print("call")
-        # subroutineCall
-        # subroutineName or className | varName
-        overwrite = True
-        if token_type is None:
-            token_type = self.tokenizer.token_type()
-            token = self.tokenizer.current_token
-            overwrite = False
-        if token_type == "IDENTIFIER":
-            self.write("identifier", token)
-            if not overwrite:
-                self.next()
-        else:
-            raise SyntaxError(f"Expected identifier but found {self.tokenizer.current_token}")
-        # optional .
-        if self.check('.'):
-            # .
+    def write_subroutine_call(self):
+        n_args = 0
+        name = self.eat_type("identifier")                          # subroutineName or className | varName
+        if self.check('.'):                                         # optional . (preceded by a class or var name)
+            kind = self.symbol_table.kind_of(name)
+            if kind is None:                                        # className -> function or constructor
+                class_name = name
+            else:                                                   # varName   -> method
+                class_name = self.symbol_table.type_of(name)
+                var_index = self.symbol_table.index_of(name)
+                segment = CompilationEngine.KIND_TO_SEGMENT[kind]
+                self.writer.write_push(segment, var_index)
+                n_args = 1
             self.eat('.')
-            self.write("symbol", '.')
-            # subroutineName
-            if self.tokenizer.token_type() == "IDENTIFIER":
-                self.write("identifier", self.tokenizer.current_token)
-                self.next()
-            else:
-                raise SyntaxError(f"Expected subroutine identifier but found {self.tokenizer.current_token}")
-        # (
+            subroutine_name = self.eat_type("identifier")
+            callee = class_name + '.' + subroutine_name
+        else:                                                       # subroutine name only -> method
+            callee = self.current_class + '.' + name
+            self.writer.write_push("pointer", 0)      # method so push THIS
+            n_args = 1
+
         self.eat('(')
-        self.write("symbol", '(')
-        # expression list
-        self.compile_expression_list()
-        # )
+        n_args += self.compile_expression_list()                    # expr0, expr1, expr2, ...
         self.eat(')')
-        self.write("symbol", ')')
+        self.writer.write_call(callee, n_args)                      # call function
 
     def compile_return(self):
-        print("return", self.tokenizer.current_token)
-        self.write_non_terminal("returnStatement", True)
-        self.indentation += 1
-
-        self.write("keyword", "return")
-        # expression
-        # check beforehand to not generate empty branches
-        if self.tokenizer.token_type() in ["IDENTIFIER", "integerConst", "stringConst"] or \
-                self.tokenizer.current_token in CompilationEngine.KEYWORD_CONST or \
-                self.tokenizer.current_token in CompilationEngine.UNARY_OP + ['(']:
+        self.eat("return")
+        if not self.check(';'):
             self.compile_expression()
-        # ;
+        else:
+            self.writer.write_push("constant", 0)
         self.eat(';')
-        self.write("symbol", ';')
-
-        self.indentation -= 1
-        self.write_non_terminal("returnStatement", False)
+        self.writer.write_return()
 
     def compile_expression(self):
-        self.write_non_terminal("expression", True)
-        self.indentation += 1
-        print("comp expr", self.tokenizer.current_token)
-        print("comp expr curr type", self.tokenizer.token_type())
-        # term
-        self.compile_term()
-        # optional repeat
-        while self.check(CompilationEngine.BINARY_OP):
-            # binary operation
-            op = self.eat(CompilationEngine.BINARY_OP)
-            self.write("symbol", self.tokenizer.symbol(op))
-            # term
-            self.compile_term()
-
-        self.indentation -= 1
-        self.write_non_terminal("expression", False)
+        self.compile_term()                                         # write exp 1
+        while self.check(CompilationEngine.BINARY_OP):              # optional operation
+            operation = self.eat(CompilationEngine.BINARY_OP)
+            self.compile_term()                                     # write exp 2
+            vm_op = CompilationEngine.B_OP_TO_VM.get(operation)
+            if vm_op is None:
+                if operation == "*":
+                    self.writer.write_call("Math.multiply", 2)
+                elif operation == "/":
+                    self.writer.write_call("Math.divide", 2)
+            else:
+                self.writer.write_arithmetic(vm_op)                     # write operation after (postfix)
 
     def compile_term(self):
-        self.write_non_terminal("term", True)
-        self.indentation += 1
-        print("compile term", self.tokenizer.current_token)
-        if self.tokenizer.token_type() == "INT_CONST":
-            self.write("integerConstant", self.tokenizer.int_val())
-            self.next()
-        elif self.tokenizer.token_type() == "STRING_CONST":
-            print("string constant")
-            self.write("stringConstant", self.tokenizer.string_val())
-            self.next()
-        elif self.tokenizer.current_token in CompilationEngine.KEYWORD_CONST:
-            self.write("keyword", self.tokenizer.keyword())
-            self.next()
-        elif self.check('('):       # '(' expr ')'
-            # (
+        if self.check_type("integerConstant"):                          # push constant n
+            number = self.eat_type("integerConstant")
+            self.writer.write_push("constant", int(number))
+        elif self.check_type("stringConstant"):
+            string = self.eat_type("stringConstant")
+            self.writer.write_push("constant", len(string))     # push length
+            self.writer.write_call("String.new", 1)         # call String.new(length)
+            for char in string:
+                self.writer.write_push("constant", ord(char))
+                self.writer.write_call("String.appendChar", 2)
+        elif self.check(CompilationEngine.KEYWORD_CONST):
+            keyword = self.eat(CompilationEngine.KEYWORD_CONST)
+            if keyword == "true":
+                self.writer.write_push("constant", 1)
+                self.writer.write_arithmetic("neg")
+            elif keyword == "this":
+                self.writer.write_push("pointer", 0)
+            else:   # false and null
+                self.writer.write_push("constant", 0)
+        elif self.check('('):                                           # '(' expr ')'
             self.eat('(')
-            self.write("symbol", '(')
-            # expression
             self.compile_expression()
-            # )
             self.eat(')')
-            self.write("symbol", ')')
         elif self.check(CompilationEngine.UNARY_OP):
-            print("unary op", self.tokenizer.symbol())
-            # op
-            op = self.eat(CompilationEngine.UNARY_OP)
-            self.write("symbol", op)
-            # term
-            self.compile_term()
-        elif self.tokenizer.token_type() == "IDENTIFIER":
-            token_pre = self.tokenizer.current_token
-            token_pre_type = self.tokenizer.token_type()
-            self.next()
-            if self.check('['):  # array entry
-                # variableName
-                self.write("identifier", token_pre)
-                # [
+            operation = self.eat(CompilationEngine.UNARY_OP)
+            self.compile_term()                                         # exp
+            vm_op = CompilationEngine.U_OP_TO_VM[operation]
+            self.writer.write_arithmetic(vm_op)                         # operation (postfix)
+        elif self.check_type("identifier"):
+            if self.tokenizer.peek_token() == '[':                      # array entry
+                var_name = self.eat_type("identifier")                  # variableName
+                var_kind = self.symbol_table.kind_of(var_name)
+                segment = CompilationEngine.KIND_TO_SEGMENT[var_kind]
+                var_index = self.symbol_table.index_of(var_name)
+                self.writer.write_push(segment, var_index)              # push address of array
                 self.eat('[')
-                self.write("symbol", '[')
-                # expression
-                self.compile_expression()
-                # ]
+                self.compile_expression()                               # comp(expr) and push
                 self.eat(']')
-                self.write("symbol", ']')
-            elif self.check(['(', '.']):  # subroutineCall
-                self.write_subroutine_call(token_pre, token_pre_type)
-            else:  # variable name
-                self.write("identifier", token_pre)
+                self.writer.write_arithmetic("add")                     # add base address to expr => addr of array[expr]
+                self.writer.write_pop("pointer", 1)       # set THAT pointer
+                self.writer.write_push("that", 0)         # push value
+            elif self.tokenizer.peek_token() in ['(', '.']:             # subroutineCall
+                self.write_subroutine_call()
+            else:                                                       # variableName
+                var_name = self.eat_type("identifier")                  # push segment i
+                var_kind = self.symbol_table.kind_of(var_name)
+                var_index = self.symbol_table.index_of(var_name)
+                segment = CompilationEngine.KIND_TO_SEGMENT[var_kind]
+                self.writer.write_push(segment, var_index)
 
-        self.indentation -= 1
-        self.write_non_terminal("term", False)
-
-    def compile_expression_list(self):
-        print("expr list")
-        self.write_non_terminal("expressionList", True)
-        self.indentation += 1
-
-        # check beforehand to not generate empty branches
-        if self.tokenizer.token_type() in ["IDENTIFIER", "INT_CONST", "STRING_CONST"] or \
-                self.tokenizer.current_token in CompilationEngine.KEYWORD_CONST or \
-                self.tokenizer.current_token in CompilationEngine.UNARY_OP + ['(']:
-            print("no skip", self.tokenizer.current_token)
-            # expression
+    def compile_expression_list(self) -> int:
+        expression_counter = 0
+        if not self.check(')'):
             self.compile_expression()
-            # (, expression)*
-            while self.check(','):
-                # ,
+            expression_counter += 1
+            while self.check(','):          # (, expression)*
                 self.eat(',')
-                self.write("symbol", ',')
-                print(self.tokenizer.current_token)
-                # expression
                 self.compile_expression()
-
-        self.indentation -= 1
-        self.write_non_terminal("expressionList", False)
+                expression_counter += 1
+        return expression_counter
